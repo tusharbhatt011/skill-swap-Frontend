@@ -7,21 +7,82 @@ const STEPS = ['Account', 'Skills Offered', 'Skills Wanted'];
 const CATEGORIES = ['Technology','Design','Marketing','Business','Language','Music','Art','Writing','Photography','Cooking','Fitness','Finance','Teaching','Engineering','Science','Other'];
 const LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Expert'];
 
+// ✅ SkillForm is OUTSIDE Register — prevents remount on every keystroke
+const SkillForm = ({ type, skills, onUpdate, onRemove, onAdd }) => (
+  <div>
+    {skills.map((skill, i) => (
+      <div key={i} style={{ background: 'var(--bg-card2)', borderRadius: 10, padding: 16, marginBottom: 12, border: '1px solid var(--border)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'end' }}>
+          <div>
+            <label className="label">Skill Name</label>
+            <input
+              className="input"
+              placeholder="e.g. React, Piano..."
+              value={skill.name}
+              onChange={e => onUpdate(i, 'name', e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label">Category</label>
+            <select className="select" value={skill.category} onChange={e => onUpdate(i, 'category', e.target.value)}>
+              {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+          <button
+            onClick={() => onRemove(i)}
+            style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--danger)', borderRadius: 8, width: 36, height: 36, cursor: 'pointer', fontSize: 16 }}
+          >✕</button>
+        </div>
+        <div style={{ marginTop: 10 }}>
+          <label className="label">Level</label>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {LEVELS.map(l => (
+              <button key={l} type="button" onClick={() => onUpdate(i, 'level', l)} style={{
+                padding: '4px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+                cursor: 'pointer', border: '1px solid',
+                background: skill.level === l ? 'rgba(99,102,241,0.2)' : 'transparent',
+                borderColor: skill.level === l ? 'var(--primary)' : 'var(--border)',
+                color: skill.level === l ? 'var(--primary-light)' : 'var(--text-dim)'
+              }}>{l}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+    ))}
+    <button type="button" onClick={onAdd} className="btn btn-secondary" style={{ width: '100%' }}>
+      + Add {type === 'skillsOffered' ? 'Another Skill' : 'Skill to Learn'}
+    </button>
+  </div>
+);
+
 export default function Register() {
   const [step, setStep] = useState(0);
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', skillsOffered: [], skillsWanted: [] });
+  const [formData, setFormData] = useState({
+    name: '', email: '', password: '',
+    skillsOffered: [],
+    skillsWanted: []
+  });
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const addSkill = (type) => {
-    setFormData(f => ({ ...f, [type]: [...f[type], { name: '', category: 'Technology', level: type === 'skillsOffered' ? 'Intermediate' : 'Beginner' }] }));
+    setFormData(f => ({
+      ...f,
+      [type]: [...f[type], {
+        name: '',
+        category: 'Technology',
+        level: type === 'skillsOffered' ? 'Intermediate' : 'Beginner'
+      }]
+    }));
   };
 
   const updateSkill = (type, idx, field, value) => {
-    const updated = [...formData[type]];
-    updated[idx] = { ...updated[idx], [field]: value };
-    setFormData(f => ({ ...f, [type]: updated }));
+    setFormData(f => {
+      const updated = [...f[type]];
+      updated[idx] = { ...updated[idx], [field]: value };
+      return { ...f, [type]: updated };
+    });
   };
 
   const removeSkill = (type, idx) => {
@@ -32,7 +93,6 @@ export default function Register() {
     setLoading(true);
     try {
       await register(formData.name, formData.email, formData.password);
-      // Update profile with skills
       const api = (await import('../utils/api')).default;
       await api.put('/auth/update-profile', {
         skillsOffered: formData.skillsOffered.filter(s => s.name),
@@ -46,45 +106,6 @@ export default function Register() {
       setLoading(false);
     }
   };
-
-  const SkillForm = ({ type }) => (
-    <div>
-      {formData[type].map((skill, i) => (
-        <div key={i} style={{ background: 'var(--bg-card2)', borderRadius: 10, padding: 16, marginBottom: 12, border: '1px solid var(--border)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'end' }}>
-            <div>
-              <label className="label">Skill Name</label>
-              <input className="input" placeholder="e.g. React, Piano..." value={skill.name} onChange={e => updateSkill(type, i, 'name', e.target.value)} />
-            </div>
-            <div>
-              <label className="label">Category</label>
-              <select className="select" value={skill.category} onChange={e => updateSkill(type, i, 'category', e.target.value)}>
-                {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-              </select>
-            </div>
-            <button onClick={() => removeSkill(type, i)} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--danger)', borderRadius: 8, width: 36, height: 36, cursor: 'pointer', fontSize: 16 }}>✕</button>
-          </div>
-          <div style={{ marginTop: 10 }}>
-            <label className="label">Level</label>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {LEVELS.map(l => (
-                <button key={l} type="button" onClick={() => updateSkill(type, i, 'level', l)} style={{
-                  padding: '4px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-                  cursor: 'pointer', border: '1px solid',
-                  background: skill.level === l ? 'rgba(99,102,241,0.2)' : 'transparent',
-                  borderColor: skill.level === l ? 'var(--primary)' : 'var(--border)',
-                  color: skill.level === l ? 'var(--primary-light)' : 'var(--text-dim)'
-                }}>{l}</button>
-              ))}
-            </div>
-          </div>
-        </div>
-      ))}
-      <button type="button" onClick={() => addSkill(type)} className="btn btn-secondary" style={{ width: '100%' }}>
-        + Add {type === 'skillsOffered' ? 'Another Skill' : 'Skill to Learn'}
-      </button>
-    </div>
-  );
 
   return (
     <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
@@ -108,7 +129,9 @@ export default function Register() {
                 }}>{i + 1}</div>
                 <span style={{ fontSize: 11, color: i <= step ? 'var(--primary-light)' : 'var(--text-dim)', whiteSpace: 'nowrap' }}>{s}</span>
               </div>
-              {i < STEPS.length - 1 && <div style={{ flex: 1, height: 2, background: i < step ? 'var(--primary)' : 'var(--border)', maxWidth: 60, marginBottom: 20 }} />}
+              {i < STEPS.length - 1 && (
+                <div style={{ flex: 1, height: 2, background: i < step ? 'var(--primary)' : 'var(--border)', maxWidth: 60, marginBottom: 20 }} />
+              )}
             </React.Fragment>
           ))}
         </div>
@@ -118,19 +141,23 @@ export default function Register() {
             <div>
               <div className="form-group">
                 <label className="label">Full Name</label>
-                <input className="input" placeholder="Your name" value={formData.name} onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
+                <input className="input" placeholder="Your name" value={formData.name}
+                  onChange={e => setFormData(f => ({ ...f, name: e.target.value }))} />
               </div>
               <div className="form-group">
                 <label className="label">Email</label>
-                <input type="email" className="input" placeholder="you@example.com" value={formData.email} onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
+                <input type="email" className="input" placeholder="you@example.com" value={formData.email}
+                  onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
               </div>
               <div className="form-group">
                 <label className="label">Password</label>
-                <input type="password" className="input" placeholder="Min. 6 characters" value={formData.password} onChange={e => setFormData(f => ({ ...f, password: e.target.value }))} />
+                <input type="password" className="input" placeholder="Min. 6 characters" value={formData.password}
+                  onChange={e => setFormData(f => ({ ...f, password: e.target.value }))} />
               </div>
-              <button className="btn btn-primary btn-full" onClick={() => { if (!formData.name || !formData.email || !formData.password) { toast.error('Fill all fields'); return; } setStep(1); }}>
-                Continue →
-              </button>
+              <button className="btn btn-primary btn-full" onClick={() => {
+                if (!formData.name || !formData.email || !formData.password) { toast.error('Fill all fields'); return; }
+                setStep(1);
+              }}>Continue →</button>
             </div>
           )}
 
@@ -138,8 +165,18 @@ export default function Register() {
             <div>
               <h3 style={{ marginBottom: 16, fontSize: 18 }}>🎓 What can you teach?</h3>
               <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 20 }}>Add skills you can offer to others</p>
-              {formData.skillsOffered.length === 0 && <button type="button" onClick={() => addSkill('skillsOffered')} className="btn btn-secondary" style={{ width: '100%', marginBottom: 16 }}>+ Add Your First Skill</button>}
-              <SkillForm type="skillsOffered" />
+              {formData.skillsOffered.length === 0 && (
+                <button type="button" onClick={() => addSkill('skillsOffered')} className="btn btn-secondary" style={{ width: '100%', marginBottom: 16 }}>
+                  + Add Your First Skill
+                </button>
+              )}
+              <SkillForm
+                type="skillsOffered"
+                skills={formData.skillsOffered}
+                onUpdate={(idx, field, val) => updateSkill('skillsOffered', idx, field, val)}
+                onRemove={(idx) => removeSkill('skillsOffered', idx)}
+                onAdd={() => addSkill('skillsOffered')}
+              />
               <div className="flex gap-3 mt-4">
                 <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setStep(0)}>← Back</button>
                 <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => setStep(2)}>Continue →</button>
@@ -151,8 +188,18 @@ export default function Register() {
             <div>
               <h3 style={{ marginBottom: 16, fontSize: 18 }}>🌱 What do you want to learn?</h3>
               <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 20 }}>Add skills you're looking to acquire</p>
-              {formData.skillsWanted.length === 0 && <button type="button" onClick={() => addSkill('skillsWanted')} className="btn btn-secondary" style={{ width: '100%', marginBottom: 16 }}>+ Add Skill to Learn</button>}
-              <SkillForm type="skillsWanted" />
+              {formData.skillsWanted.length === 0 && (
+                <button type="button" onClick={() => addSkill('skillsWanted')} className="btn btn-secondary" style={{ width: '100%', marginBottom: 16 }}>
+                  + Add Skill to Learn
+                </button>
+              )}
+              <SkillForm
+                type="skillsWanted"
+                skills={formData.skillsWanted}
+                onUpdate={(idx, field, val) => updateSkill('skillsWanted', idx, field, val)}
+                onRemove={(idx) => removeSkill('skillsWanted', idx)}
+                onAdd={() => addSkill('skillsWanted')}
+              />
               <div className="flex gap-3 mt-4">
                 <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setStep(1)}>← Back</button>
                 <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleSubmit} disabled={loading}>

@@ -366,9 +366,9 @@ const Navbar = () => {
               ))}
             </div>
 
-            {/* Sign Out — pinned at bottom */}
-            <div style={{ marginTop: 'auto', padding: '12px 16px 32px' }}>
-              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', marginBottom: 12 }} />
+            {/* Sign Out — right after account links, no gap */}
+            <div style={{ padding: '0 12px 40px' }}>
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', marginBottom: 8 }} />
               <button
                 onClick={handleLogout}
                 style={{

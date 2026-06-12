@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
+  "buildCommand": "react-scripts build",
   "outputDirectory": "build",
   "installCommand": "npm install",
   "rewrites": [

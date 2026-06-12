@@ -10,7 +10,6 @@ const Navbar = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const profileRef = useRef(null);
-  const mobileMenuRef = useRef(null);
 
   const handleLogout = () => {
     logout();
@@ -20,7 +19,6 @@ const Navbar = () => {
 
   const isActive = (path) => location.pathname === path;
 
-  // Track screen size
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
@@ -33,14 +31,21 @@ const Navbar = () => {
     setProfileOpen(false);
   }, [location.pathname]);
 
-  // Close dropdowns on outside click
+  // Lock body scroll when mobile menu open
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
+
+  // Close profile dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
         setProfileOpen(false);
-      }
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
-        setMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -56,13 +61,13 @@ const Navbar = () => {
 
   const Avatar = ({ size = 36 }) => (
     user?.avatar
-      ? <img src={user.avatar} alt={user.name} className="avatar" style={{ width: size, height: size }} />
-      : <div className="avatar" style={{
+      ? <img src={user.avatar} alt={user.name} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover' }} />
+      : <div style={{
           width: size, height: size, fontSize: size * 0.4,
           borderRadius: '50%',
           background: 'linear-gradient(135deg, #6366f1, #06b6d4)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#fff', fontWeight: 700,
+          color: '#fff', fontWeight: 700, flexShrink: 0,
         }}>
           {user?.name?.[0]?.toUpperCase()}
         </div>
@@ -71,12 +76,12 @@ const Navbar = () => {
   return (
     <>
       <nav style={{
-        position: 'sticky', top: 0, zIndex: 100,
+        position: 'sticky', top: 0, zIndex: 200,
         background: 'rgba(15,15,26,0.97)',
         backdropFilter: 'blur(20px)',
         borderBottom: '1px solid rgba(255,255,255,0.06)',
       }}>
-        <div className="container" style={{
+        <div style={{
           display: 'flex', alignItems: 'center',
           height: 64, gap: 16,
           padding: '0 16px',
@@ -91,7 +96,7 @@ const Navbar = () => {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 18,
             }}>🔄</div>
-            <span style={{ fontSize: 18, fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, color: 'var(--text, #fff)' }}>
+            <span style={{ fontSize: 18, fontWeight: 700, color: '#fff', fontFamily: 'Space Grotesk, sans-serif' }}>
               Skill<span style={{ background: 'linear-gradient(135deg, #6366f1, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Swap</span>
             </span>
           </Link>
@@ -113,10 +118,9 @@ const Navbar = () => {
 
           {/* Right Side */}
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
-
             {user ? (
               <>
-                {/* Points badge — hidden on very small screens */}
+                {/* Points (desktop only) */}
                 {!isMobile && (
                   <div style={{
                     display: 'flex', alignItems: 'center', gap: 6,
@@ -128,7 +132,7 @@ const Navbar = () => {
                   </div>
                 )}
 
-                {/* Profile Dropdown (desktop) */}
+                {/* Desktop Profile Dropdown */}
                 {!isMobile && (
                   <div ref={profileRef} style={{ position: 'relative' }}>
                     <button onClick={() => setProfileOpen(!profileOpen)} style={{
@@ -139,14 +143,14 @@ const Navbar = () => {
                       <span style={{ fontSize: 14, fontWeight: 500, color: '#fff' }}>
                         {user.name.split(' ')[0]}
                       </span>
-                      <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, transition: 'transform 0.2s', transform: profileOpen ? 'rotate(180deg)' : 'rotate(0)' }}>▼</span>
+                      <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, transition: 'transform 0.2s', display: 'inline-block', transform: profileOpen ? 'rotate(180deg)' : 'rotate(0)' }}>▼</span>
                     </button>
                     {profileOpen && (
                       <div style={{
                         position: 'absolute', right: 0, top: 'calc(100% + 8px)',
                         background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.08)',
                         borderRadius: 12, padding: 8, minWidth: 180,
-                        boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 200,
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 300,
                       }}>
                         {[
                           { to: `/profile/${user._id}`, label: '👤 My Profile' },
@@ -173,42 +177,41 @@ const Navbar = () => {
                   </div>
                 )}
 
-                {/* Hamburger Button (mobile only) */}
+                {/* Mobile Hamburger */}
                 {isMobile && (
-                  <div ref={mobileMenuRef} style={{ position: 'relative' }}>
-                    <button
-                      onClick={() => setMenuOpen(!menuOpen)}
-                      aria-label="Toggle menu"
-                      style={{
-                        background: menuOpen ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: 10, cursor: 'pointer',
-                        width: 40, height: 40,
-                        display: 'flex', flexDirection: 'column',
-                        alignItems: 'center', justifyContent: 'center', gap: 5,
-                        transition: 'all 0.2s',
-                      }}
-                    >
-                      <span style={{
-                        display: 'block', width: 18, height: 2,
-                        background: menuOpen ? '#a5b4fc' : 'rgba(255,255,255,0.8)',
-                        borderRadius: 2, transition: 'all 0.25s',
-                        transform: menuOpen ? 'translateY(7px) rotate(45deg)' : 'none',
-                      }} />
-                      <span style={{
-                        display: 'block', width: 18, height: 2,
-                        background: menuOpen ? '#a5b4fc' : 'rgba(255,255,255,0.8)',
-                        borderRadius: 2, transition: 'all 0.25s',
-                        opacity: menuOpen ? 0 : 1,
-                      }} />
-                      <span style={{
-                        display: 'block', width: 18, height: 2,
-                        background: menuOpen ? '#a5b4fc' : 'rgba(255,255,255,0.8)',
-                        borderRadius: 2, transition: 'all 0.25s',
-                        transform: menuOpen ? 'translateY(-7px) rotate(-45deg)' : 'none',
-                      }} />
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setMenuOpen(!menuOpen)}
+                    aria-label="Toggle menu"
+                    style={{
+                      background: menuOpen ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: 10, cursor: 'pointer',
+                      width: 42, height: 42,
+                      display: 'flex', flexDirection: 'column',
+                      alignItems: 'center', justifyContent: 'center', gap: 5,
+                      transition: 'all 0.2s',
+                      WebkitTapHighlightColor: 'transparent',
+                    }}
+                  >
+                    <span style={{
+                      display: 'block', width: 18, height: 2,
+                      background: menuOpen ? '#a5b4fc' : 'rgba(255,255,255,0.8)',
+                      borderRadius: 2, transition: 'all 0.25s',
+                      transform: menuOpen ? 'translateY(7px) rotate(45deg)' : 'none',
+                    }} />
+                    <span style={{
+                      display: 'block', width: 18, height: 2,
+                      background: menuOpen ? '#a5b4fc' : 'rgba(255,255,255,0.8)',
+                      borderRadius: 2, transition: 'all 0.25s',
+                      opacity: menuOpen ? 0 : 1,
+                    }} />
+                    <span style={{
+                      display: 'block', width: 18, height: 2,
+                      background: menuOpen ? '#a5b4fc' : 'rgba(255,255,255,0.8)',
+                      borderRadius: 2, transition: 'all 0.25s',
+                      transform: menuOpen ? 'translateY(-7px) rotate(-45deg)' : 'none',
+                    }} />
+                  </button>
                 )}
               </>
             ) : (
@@ -217,14 +220,12 @@ const Navbar = () => {
                   padding: '7px 16px', borderRadius: 8, fontSize: 14, fontWeight: 500,
                   color: 'rgba(255,255,255,0.7)', textDecoration: 'none',
                   border: '1px solid rgba(255,255,255,0.12)',
-                  transition: 'all 0.2s',
                 }}>Sign In</Link>
                 {!isMobile && (
                   <Link to="/register" style={{
                     padding: '7px 16px', borderRadius: 8, fontSize: 14, fontWeight: 600,
                     background: 'linear-gradient(135deg, #6366f1, #06b6d4)',
                     color: '#fff', textDecoration: 'none',
-                    transition: 'opacity 0.2s',
                   }}>Join Free</Link>
                 )}
               </>
@@ -233,30 +234,74 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* Mobile Drawer */}
-      {isMobile && menuOpen && user && (
-        <div style={{
-          position: 'fixed', top: 64, left: 0, right: 0, bottom: 0,
-          zIndex: 99,
-          background: 'rgba(0,0,0,0.5)',
-          backdropFilter: 'blur(4px)',
-        }} onClick={() => setMenuOpen(false)}>
+      {/* ✅ Mobile Full-Screen Overlay */}
+      {isMobile && user && (
+        <>
+          {/* Backdrop */}
           <div
-            onClick={e => e.stopPropagation()}
+            onClick={() => setMenuOpen(false)}
             style={{
-              position: 'absolute', top: 0, left: 0, right: 0,
-              background: '#13131f',
-              borderBottom: '1px solid rgba(255,255,255,0.08)',
-              padding: 16,
-              animation: 'slideDown 0.2s ease',
+              position: 'fixed',
+              top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0,0,0,0.6)',
+              zIndex: menuOpen ? 150 : -1,
+              opacity: menuOpen ? 1 : 0,
+              transition: 'opacity 0.25s',
+              pointerEvents: menuOpen ? 'all' : 'none',
             }}
-          >
-            {/* User Info Row */}
+          />
+
+          {/* Drawer Panel */}
+          <div style={{
+            position: 'fixed',
+            top: 0, right: 0,
+            width: '80%', maxWidth: 320,
+            height: '100vh',
+            background: '#0f0f1a',
+            borderLeft: '1px solid rgba(255,255,255,0.08)',
+            zIndex: 300,
+            transform: menuOpen ? 'translateX(0)' : 'translateX(100%)',
+            transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
+            display: 'flex', flexDirection: 'column',
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
+          }}>
+
+            {/* Drawer Header */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '16px 20px',
+              borderBottom: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 30, height: 30, borderRadius: 8,
+                  background: 'linear-gradient(135deg, #6366f1, #06b6d4)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15,
+                }}>🔄</div>
+                <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', fontFamily: 'Space Grotesk, sans-serif' }}>
+                  Skill<span style={{ background: 'linear-gradient(135deg, #6366f1, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Swap</span>
+                </span>
+              </div>
+              <button
+                onClick={() => setMenuOpen(false)}
+                style={{
+                  background: 'rgba(255,255,255,0.06)', border: 'none',
+                  borderRadius: 8, width: 34, height: 34,
+                  color: 'rgba(255,255,255,0.6)', fontSize: 18,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >✕</button>
+            </div>
+
+            {/* User Info */}
             <div style={{
               display: 'flex', alignItems: 'center', gap: 12,
-              padding: '12px 16px', borderRadius: 12,
+              margin: '16px 16px 8px',
+              padding: '14px 16px', borderRadius: 12,
               background: 'rgba(99,102,241,0.08)',
-              marginBottom: 12,
+              border: '1px solid rgba(99,102,241,0.15)',
             }}>
               <Avatar size={44} />
               <div>
@@ -266,65 +311,88 @@ const Navbar = () => {
             </div>
 
             {/* Nav Links */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12 }}>
+            <div style={{ padding: '8px 12px' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', padding: '8px 8px 4px' }}>Navigate</p>
               {navLinks.map(link => (
-                <Link key={link.path} to={link.path} onClick={() => setMenuOpen(false)} style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '12px 16px', borderRadius: 10, textDecoration: 'none',
-                  fontSize: 15, fontWeight: 500,
-                  color: isActive(link.path) ? '#a5b4fc' : 'rgba(255,255,255,0.7)',
-                  background: isActive(link.path) ? 'rgba(99,102,241,0.12)' : 'transparent',
-                  transition: 'all 0.15s',
-                }}>
-                  <span>{link.icon}</span>
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  onClick={() => setMenuOpen(false)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '13px 12px', borderRadius: 10, textDecoration: 'none',
+                    fontSize: 15, fontWeight: 500,
+                    color: isActive(link.path) ? '#a5b4fc' : 'rgba(255,255,255,0.75)',
+                    background: isActive(link.path) ? 'rgba(99,102,241,0.12)' : 'transparent',
+                    marginBottom: 2,
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  <span style={{ fontSize: 18, width: 24, textAlign: 'center' }}>{link.icon}</span>
                   <span>{link.label}</span>
-                  {isActive(link.path) && <span style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: '#6366f1' }} />}
+                  {isActive(link.path) && (
+                    <span style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: '#6366f1', flexShrink: 0 }} />
+                  )}
                 </Link>
               ))}
             </div>
 
             {/* Divider */}
-            <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', marginBottom: 12 }} />
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 16px' }} />
 
             {/* Profile Links */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12 }}>
+            <div style={{ padding: '8px 12px' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', padding: '8px 8px 4px' }}>Account</p>
               {[
                 { to: `/profile/${user._id}`, label: 'My Profile', icon: '👤' },
                 { to: '/dashboard', label: 'Dashboard', icon: '📊' },
                 ...(user.isAdmin ? [{ to: '/admin', label: 'Admin Panel', icon: '🔧' }] : []),
               ].map(item => (
-                <Link key={item.to} to={item.to} onClick={() => setMenuOpen(false)} style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '12px 16px', borderRadius: 10, textDecoration: 'none',
-                  fontSize: 15, color: 'rgba(255,255,255,0.6)',
-                  transition: 'all 0.15s',
-                }}>
-                  <span>{item.icon}</span>
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setMenuOpen(false)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '13px 12px', borderRadius: 10, textDecoration: 'none',
+                    fontSize: 15, color: 'rgba(255,255,255,0.65)',
+                    marginBottom: 2,
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  <span style={{ fontSize: 18, width: 24, textAlign: 'center' }}>{item.icon}</span>
                   <span>{item.label}</span>
                 </Link>
               ))}
             </div>
 
-            {/* Sign Out */}
-            <button onClick={handleLogout} style={{
-              width: '100%', textAlign: 'left',
-              display: 'flex', alignItems: 'center', gap: 12,
-              padding: '12px 16px', borderRadius: 10,
-              background: 'rgba(248,113,113,0.08)',
-              border: '1px solid rgba(248,113,113,0.15)',
-              cursor: 'pointer', color: '#f87171', fontSize: 15,
-            }}>
-              <span>🚪</span>
-              <span>Sign Out</span>
-            </button>
+            {/* Sign Out — pinned at bottom */}
+            <div style={{ marginTop: 'auto', padding: '12px 16px 32px' }}>
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', marginBottom: 12 }} />
+              <button
+                onClick={handleLogout}
+                style={{
+                  width: '100%', textAlign: 'left',
+                  display: 'flex', alignItems: 'center', gap: 14,
+                  padding: '14px 16px', borderRadius: 12,
+                  background: 'rgba(248,113,113,0.08)',
+                  border: '1px solid rgba(248,113,113,0.2)',
+                  cursor: 'pointer', color: '#f87171', fontSize: 15, fontWeight: 500,
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                <span style={{ fontSize: 18, width: 24, textAlign: 'center' }}>🚪</span>
+                <span>Sign Out</span>
+              </button>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       <style>{`
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-8px); }
-          to { opacity: 1; transform: translateY(0); }
+        @keyframes slideIn {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
         }
       `}</style>
     </>
